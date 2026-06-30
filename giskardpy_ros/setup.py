@@ -39,6 +39,8 @@ setup(
             f"hsr_trust_me_bro = {script_folder}.iai_robots.hsr.iai_hsr_real_time_trust_me_bro:main",
             f"tracy_standalone = {script_folder}.iai_robots.tracy.tracy_standalone:main",
             f"tracy_velocity = {script_folder}.iai_robots.tracy.tracy_velocity:main",
+            f"daisy_standalone = {script_folder}.iai_robots.daisy.daisy_standalone:main",
+            f"daisy_velocity = {script_folder}.iai_robots.daisy.daisy_velocity:main",
             f"stretch_velocity = {script_folder}.iai_robots.stretch.stretch_velocity:main",
             f"r6bot = {script_folder}.other_robots.test.r6bot:main",
             f"interactive_marker = {script_folder}.tools.interactive_marker:main",
