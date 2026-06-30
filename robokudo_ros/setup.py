@@ -24,7 +24,7 @@ setup(
     maintainer="Patrick Mania",
     maintainer_email="pmania@uni-bremen.de",
     description="RoboKudo ROS2 package",
-    license="Apache License 2.0",
+    license="LGPLv3",
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [

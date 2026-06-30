@@ -8,7 +8,7 @@
     </description>
     <maintainer email="stelter@uni-bremen.de">Simon Stelter</maintainer>
     <author email="stelter@uni-bremen.de">Simon Stelter</author>
-    <license>BSD</license>
+    <license>LGPLv3</license>
 
     <buildtool_depend>ament_cmake</buildtool_depend>
 

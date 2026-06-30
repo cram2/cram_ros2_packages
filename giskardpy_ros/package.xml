@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>robokudo_ros</name>
+  <name>giskardpy_ros</name>
   <version>0.0.1</version>
-  <description>The robokudo_ros package</description>
-  <maintainer email="pmania@uni-bremen.de">Patrick Mania</maintainer>
-  <author email="pmania@uni-bremen.de">Patrick Mania</author>
+  <description>The giskardpy package</description>
+  <maintainer email="stelter@uni-bremen.de">Simon Stelter</maintainer>
+  <author email="stelter@uni-bremen.de">Simon Stelter</author>
   <license>LGPLv3</license>
-  <url type="website">https://robokudo.ai.uni-bremen.de</url>
+  <url type="website">https://github.com/SemRoCo/giskardpy_ros/wiki</url>
 
   <!-- mock dependencies -->
   <exec_depend>action_msgs</exec_depend>
