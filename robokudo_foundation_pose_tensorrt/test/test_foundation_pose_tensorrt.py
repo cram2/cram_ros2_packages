@@ -1,0 +1,114 @@
+"""End to end checks of 'robokudo_foundation_pose_tensorrt' on synthetic scenes: the textured CAD meshes of
+'robokudo_cad_data' are rendered at known poses with Open3D raycasting, estimated and tracked, and compared with the
+ground truth."""
+import os.path as osp
+
+import numpy as np
+import pytest
+from scipy.spatial.transform import Rotation
+
+foundation_pose_tensorrt = pytest.importorskip("robokudo_foundation_pose_tensorrt")
+o3d = pytest.importorskip("open3d")
+
+MESH_DIR = osp.join(osp.dirname(__file__), "..", "..", "robokudo_cad_data", "meshes")
+MESHES = [osp.abspath(osp.join(MESH_DIR, name, "textured.obj"))
+          for name in ("cracker_cheezit_box_original", "mustard_frenchs_bottle")]
+H, W = 480, 640
+K = np.array([[600.0, 0.0, 320.0], [0.0, 600.0, 240.0], [0.0, 0.0, 1.0]])
+
+
+def render(mesh_file: str, pose: np.ndarray):
+    """RGB (from the texture), depth and mask of 'mesh_file' at 'pose' (object to camera)."""
+    mesh = o3d.io.read_triangle_mesh(mesh_file, enable_post_processing=True)
+    vertices = np.asarray(mesh.vertices) @ pose[:3, :3].T + pose[:3, 3]
+    scene = o3d.t.geometry.RaycastingScene()
+    scene.add_triangles(o3d.core.Tensor(vertices.astype(np.float32)),
+                        o3d.core.Tensor(np.asarray(mesh.triangles).astype(np.uint32)))
+    rays = scene.create_rays_pinhole(o3d.core.Tensor(K), o3d.core.Tensor(np.eye(4)), W, H)
+    hit = scene.cast_rays(rays)
+    t_hit = hit["t_hit"].numpy()
+    mask = np.isfinite(t_hit)
+    depth = np.where(mask, t_hit * rays.numpy()[..., 5], 0.0).astype(np.float32)
+
+    # texture lookup by barycentric uv interpolation; Open3D already flips v when loading the OBJ
+    tri_uvs = np.asarray(mesh.triangle_uvs).reshape(-1, 3, 2)
+    prim = hit["primitive_ids"].numpy()[mask]
+    bary = hit["primitive_uvs"].numpy()[mask]
+    uv = (1 - bary[:, :1] - bary[:, 1:]) * tri_uvs[prim, 0] + bary[:, :1] * tri_uvs[prim, 1] + \
+        bary[:, 1:] * tri_uvs[prim, 2]
+    texture = np.asarray(mesh.textures[0])
+    th, tw = texture.shape[:2]
+    rgb = np.full((H, W, 3), 60, np.uint8)
+    rgb[mask] = texture[np.clip((uv[:, 1] * th).astype(int), 0, th - 1),
+                        np.clip((uv[:, 0] * tw).astype(int), 0, tw - 1), :3]
+    return rgb, depth, mask
+
+
+def pose_errors(estimate: np.ndarray, truth: np.ndarray):
+    """(rotation error in degrees, translation error in millimeters)"""
+    rotation = np.degrees(Rotation.from_matrix(estimate[:3, :3].T @ truth[:3, :3]).magnitude())
+    return rotation, np.linalg.norm(estimate[:3, 3] - truth[:3, 3]) * 1e3
+
+
+def random_pose(rng: np.random.Generator) -> np.ndarray:
+    pose = np.eye(4)
+    pose[:3, :3] = Rotation.from_euler("xyz", rng.uniform(-50, 50, 3), degrees=True).as_matrix()
+    pose[:3, 3] = [rng.uniform(-0.08, 0.08), rng.uniform(-0.06, 0.06), rng.uniform(0.5, 0.8)]
+    return pose
+
+
+@pytest.fixture(scope="module")
+def estimator():
+    refine_engine, score_engine = foundation_pose_tensorrt.ensure_engines(precision="fp16")
+    est = foundation_pose_tensorrt.FoundationPose(refine_engine_file_path=refine_engine, score_engine_file_path=score_engine)
+    for mesh_file in MESHES:
+        est.set_mesh(mesh_file)
+    return est
+
+
+def test_estimate_alternating_meshes(estimator):
+    # switching between cached meshes must keep each mesh's own texture
+    rng = np.random.default_rng(0)
+    for i in range(4):
+        mesh_file = MESHES[i % 2]
+        estimator.set_mesh(mesh_file)
+        truth = random_pose(rng)
+        rgb, depth, mask = render(mesh_file, truth)
+        pose, extents, _ = estimator.estimate(rgb=rgb, depth=depth, mask=mask, cam_intrinsics=K)
+        rotation_error, translation_error = pose_errors(pose, truth)
+        assert rotation_error < 2.0 and translation_error < 3.0, (mesh_file, rotation_error, translation_error)
+        assert estimator.mesh_file_path == mesh_file
+
+
+def test_track_small_motion(estimator):
+    estimator.set_mesh(MESHES[0])
+    truth = random_pose(np.random.default_rng(1))
+    rgb, depth, mask = render(MESHES[0], truth)
+    pose, _, _ = estimator.estimate(rgb=rgb, depth=depth, mask=mask, cam_intrinsics=K)
+
+    motion = np.eye(4)
+    motion[:3, :3] = Rotation.from_euler("xyz", [3, -2, 2], degrees=True).as_matrix()
+    motion[:3, 3] = [0.006, -0.005, 0.008]
+    truth = motion @ truth
+    rgb, depth, mask = render(MESHES[0], truth)
+    pose, _, score = estimator.track(rgb=rgb, depth=depth, mask=mask, cam_intrinsics=K, previous_pose=pose,
+                                     iterations=2)
+    rotation_error, translation_error = pose_errors(pose, truth)
+    assert rotation_error < 1.5 and translation_error < 3.0, (rotation_error, translation_error)
+    assert np.isnan(score)
+
+
+def test_empty_mask_returns_none(estimator):
+    estimator.set_mesh(MESHES[0])
+    depth = np.full((H, W), 0.6, np.float32)
+    result = estimator.estimate(rgb=np.zeros((H, W, 3), np.uint8), depth=depth, mask=np.zeros((H, W), bool),
+                                cam_intrinsics=K)
+    assert result is None
+
+
+def test_invalid_input_raises(estimator):
+    with pytest.raises(RuntimeError):
+        estimator.set_mesh("/nonexistent/mesh.obj")
+    with pytest.raises(ValueError):
+        estimator.estimate(rgb=np.zeros((H, W), np.uint8), depth=np.zeros((H, W), np.float32),
+                           mask=np.zeros((H, W), bool), cam_intrinsics=K)
