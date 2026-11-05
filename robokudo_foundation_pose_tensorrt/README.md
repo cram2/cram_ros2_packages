@@ -38,7 +38,7 @@ the GIL, so they run in a `ThreadedAnnotator` while the tree ticks.
 A normal workspace build, with the RoboKudo venv active (`rksetup`):
 
 ```bash
-python3 -m pip install tensorrt-cu12==10.13.3.9    # once per venv, provides the TensorRT runtime
+python3 -m pip install "tensorrt-cu12>=10.13.3,<11"    # once per venv, provides the TensorRT runtime
 python3 -m colcon build --symlink-install --packages-select robokudo_foundation_pose_tensorrt
 ```
 
@@ -65,10 +65,10 @@ annotator builds missing ones on first use, and `python3 python/engines.py --pre
 python3 -m colcon test --packages-select robokudo_foundation_pose_tensorrt && python3 -m colcon test-result --verbose
 ```
 
-Renders the textured `robokudo_cad_data` meshes at known poses and checks estimation, tracking, mesh cache switches
-and error handling against the ground truth.
+Generates textured boxes, renders them at known poses and checks estimation, tracking, mesh cache switches and error
+handling against the ground truth.
 
-## Performance (RTX 4070, 640x480, synthetic scenes of the CAD data)
+## Performance (RTX 4070, 640x480, synthetic scenes)
 
 | engines | call | time | rotation / translation error |
 |---|---|---|---|
@@ -77,11 +77,3 @@ and error handling against the ground truth.
 | **FP16, opt shape 42/252 (default)** | estimate, 3 refine iterations | **~370 ms** | 0.1-0.9 deg / 0.6-1.4 mm |
 | FP16, opt shape 42/252 | estimate, 1 refine iteration | ~210 ms | 0.9-5.5 deg / 2.5-20 mm |
 | FP16, opt shape 42/252 | track, 2 iterations | ~3 ms | 0.6 deg / 0.1 mm after a 4 deg / 39 mm motion |
-
-In RoboKudo (`pose_estimation_demo`) on real HSR frames, with the object detector on the same GPU: ~390-490 ms per
-estimated object.
-
-About 93 % of an estimate is TensorRT inference of the networks (252 hypotheses), rendering ~77 ms, the rest ~2 ms.
-One refine batch of all 252 hypotheses was not faster than chunks of 42. The Isaac ROS docs recommend FP32 because of
-FP16 precision loss; on the synthetic scenes FP16 was as accurate, compare on real data with
-`TensorRTFoundationPose(precision=EnginePrecision.FP32)` as the pose estimator of the annotator.

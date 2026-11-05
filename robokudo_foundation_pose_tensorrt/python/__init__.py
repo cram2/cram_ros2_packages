@@ -20,7 +20,7 @@ def _load_tensorrt() -> None:
         import tensorrt_libs
     except ImportError as e:
         raise ImportError("robokudo_foundation_pose_tensorrt needs TensorRT 10 in this Python environment: "
-                          "'python3 -m pip install tensorrt-cu12==10.13.3.9'") from e
+                          "'python3 -m pip install \"tensorrt-cu12>=10.13.3,<11\"'") from e
     ctypes.CDLL(osp.join(osp.dirname(tensorrt_libs.__file__), "libnvinfer.so.10"), mode=ctypes.RTLD_GLOBAL)
 
 

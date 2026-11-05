@@ -41,7 +41,7 @@ if(NOT CMAKE_CUDA_COMPILER OR NOT TENSORRT_LIB_DIR)
   message(WARNING
     "robokudo_foundation_pose_tensorrt: building only the Python part. The extension needs a CUDA compiler "
     "(nvidia-cuda-toolkit, found: '${CMAKE_CUDA_COMPILER}') and TensorRT in '${Python3_EXECUTABLE}' "
-    "(found: '${TENSORRT_LIB_DIR}', install with 'python3 -m pip install tensorrt-cu12==10.13.3.9').")
+    "(found: '${TENSORRT_LIB_DIR}', install with 'python3 -m pip install \"tensorrt-cu12>=10.13.3,<11\"').")
   ament_package()
   return()
 endif()
