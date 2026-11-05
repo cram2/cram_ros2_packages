@@ -4,7 +4,7 @@ Engines only run with the TensorRT version and GPU they were built for, so they 
 models into a per user cache, '~/.cache/robokudo_foundation_pose_tensorrt/<tensorrt version>_<gpu>/' (or
 '$ROBOKUDO_FOUNDATION_POSE_TENSORRT_CACHE/...').
 The optimization profiles are tuned for the batch sizes used at runtime (refine 42, score 252), not for batch 1 as
-in the Isaac ROS docs, which is ~13 % faster.
+in the Isaac ROS docs.
 
 Usable without the compiled module, also as a script: 'python3 engines.py [--precision fp16|fp32]'.
 """
