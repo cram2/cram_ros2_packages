@@ -17,7 +17,7 @@ est.set_mesh("/abs/path/textured.obj")     # loaded once (raises on errors), cac
 result = est.estimate(rgb=rgb, depth=depth, mask=mask, cam_intrinsics=K)
 if result is not None:
     pose, extents, score = result          # [4, 4] object to camera, [3] mesh size, best hypothesis score
-    # next frame: refine the known pose instead of a full estimation (~3 ms instead of ~370 ms)
+    # next frame: refine the known pose instead of a full estimation
     pose, extents, _ = est.track(rgb=rgb2, depth=depth2, mask=mask2, cam_intrinsics=K, previous_pose=pose, iterations=2)
 ```
 
@@ -68,12 +68,12 @@ python3 -m colcon test --packages-select robokudo_foundation_pose_tensorrt && py
 Generates textured boxes, renders them at known poses and checks estimation, tracking, mesh cache switches and error
 handling against the ground truth.
 
-## Performance (RTX 4070, 640x480, synthetic scenes)
+## Accuracy (RTX 4070, 640x480, synthetic scenes)
 
-| engines | call | time | rotation / translation error |
-|---|---|---|---|
-| FP32, opt shape 1 (Isaac docs) | estimate, 3 refine iterations | ~1470 ms | 0.2-0.6 deg / 0.7-1.4 mm |
-| FP16, opt shape 1 | estimate, 3 refine iterations | ~423 ms | 0.2-1.0 deg / 0.6-1.3 mm |
-| **FP16, opt shape 42/252 (default)** | estimate, 3 refine iterations | **~370 ms** | 0.1-0.9 deg / 0.6-1.4 mm |
-| FP16, opt shape 42/252 | estimate, 1 refine iteration | ~210 ms | 0.9-5.5 deg / 2.5-20 mm |
-| FP16, opt shape 42/252 | track, 2 iterations | ~3 ms | 0.6 deg / 0.1 mm after a 4 deg / 39 mm motion |
+| engines | call | rotation / translation error |
+|---|---|---|
+| FP32, opt shape 1 (Isaac docs) | estimate, 3 refine iterations | 0.2-0.6 deg / 0.7-1.4 mm |
+| FP16, opt shape 1 | estimate, 3 refine iterations | 0.2-1.0 deg / 0.6-1.3 mm |
+| **FP16, opt shape 42/252 (default)** | estimate, 3 refine iterations | 0.1-0.9 deg / 0.6-1.4 mm |
+| FP16, opt shape 42/252 | estimate, 1 refine iteration | 0.9-5.5 deg / 2.5-20 mm |
+| FP16, opt shape 42/252 | track, 2 iterations | 0.6 deg / 0.1 mm after a 4 deg / 39 mm motion |
