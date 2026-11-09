@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>robokudo_foundation_pose_tensorrt</name>
+  <version>0.1.0</version>
+  <description>
+    In-process TensorRT FoundationPose for RoboKudo: Python bindings around the ROS-free core of
+    Isaac ROS FoundationPose with direct TensorRT inference.
+  </description>
+  <maintainer email="pauler.treides@gmail.com">sorinar329</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <!-- CUDA toolkit and the 'tensorrt-cu12' wheel of the build venv are needed too, without them the extension is
+       skipped with a warning. pybind11, CV-CUDA and the TensorRT headers are downloaded at configure time. -->
+  <build_depend>eigen</build_depend>
+  <build_depend>libopencv-dev</build_depend>
+  <build_depend>assimp-dev</build_depend>
+
+  <exec_depend>libopencv-dev</exec_depend>
+  <exec_depend>assimp</exec_depend>
+
+  <test_depend>ament_cmake_pytest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
